@@ -18,7 +18,7 @@ func systemCVEsURL(systemID string, filters []string) string {
 			url = fmt.Sprintf("%s&", url)
 		}
 	}
-	fmt.Println(url)
+	//fmt.Println(url)
 	return url
 }
 
@@ -54,6 +54,14 @@ func getTotalItems(res *http.Response) int {
 	return -1
 }
 
+func getRemediation(line string, remediation int) string {
+	return base.MatchPattern(line, fmt.Sprintf("\"remediation\": %d", remediation))
+}
+
+func getCVEid(line string) string {
+	return base.MatchPattern(line, "\"id\":")
+}
+
 func GetSystemCVEsCount(client http.Client, systemID string) (int, int) {
 	fixedCVEs, unfixedCVEs := 0, 0
 	for _, filterVal := range []string{"true", "false"} {
@@ -69,7 +77,7 @@ func GetSystemCVEsCount(client http.Client, systemID string) (int, int) {
 			log.Fatal("failed to make http request: ", err)
 		}
 
-		log.Println("System", systemID, "request: ", res.Status)
+		//log.Println("System", systemID, "request: ", res.Status)
 
 		total := getTotalItems(res)
 
@@ -81,4 +89,45 @@ func GetSystemCVEsCount(client http.Client, systemID string) (int, int) {
 	}
 
 	return fixedCVEs, unfixedCVEs
+}
+
+func filterSystemCVEsWithRemediation(res *http.Response, remediation int) ([]string, error) {
+	result := make([]string, 0)
+	scanner := bufio.NewScanner(res.Body)
+
+	for cveID := false; scanner.Scan(); {
+		line := scanner.Text()
+		if remLine := getRemediation(line, remediation); remLine != "" {
+			cveID = true
+		}
+		if id := getCVEid(line); cveID && id != "" {
+			result = append(result, id)
+			cveID = false
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func GetSystemCVEsWithRemediation(client http.Client, systemID, advisoryFilter string, remediation int) []string {
+	cveURL := systemCVEsURL(systemID, []string{fmt.Sprintf("advisory_available=%s", advisoryFilter)})
+	req, err := http.NewRequest("GET", cveURL, nil)
+	if err != nil {
+		log.Fatal("failed to create new HTTP request: ", err)
+	}
+	req.Header = base.BasicHeader()
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatal("failed to make http request: ", err)
+	}
+
+	cves, err := filterSystemCVEsWithRemediation(res, remediation)
+	if err != nil {
+		log.Fatal("failed to filter cves with remediation: ", err)
+	}
+
+	return cves
 }

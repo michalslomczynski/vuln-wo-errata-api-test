@@ -13,11 +13,28 @@ const (
 	pageSize = 5000
 )
 
+func getUUID(line string) string {
+	if match := base.MatchPattern(line, "\"id\":"); match != "" {
+		re := regexp.MustCompile("[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}")
+		return re.FindString(match)
+	}
+	return ""
+}
+
+func getDisplayName(line string) string {
+	return base.MatchPattern(line, "\"display_name\":")
+}
+
 func getSystemIDsFromResponse(res *http.Response) ([]string, error) {
 	result := make([]string, 0)
 	scanner := bufio.NewScanner(res.Body)
 	for scanner.Scan() {
-		if uuid := handleLine(scanner.Text()); uuid != "" {
+		line := scanner.Text()
+		if name := getDisplayName(line); name != "" {
+			fmt.Println(name)
+		}
+		if uuid := getUUID(line); uuid != "" {
+			fmt.Println("uuid: ", uuid)
 			result = append(result, uuid)
 		}
 	}
@@ -25,14 +42,6 @@ func getSystemIDsFromResponse(res *http.Response) ([]string, error) {
 		return result, err
 	}
 	return result, nil
-}
-
-func handleLine(line string) string {
-	if match := base.MatchPattern(line, "\"id\":"); match != "" {
-		re := regexp.MustCompile("[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}")
-		return re.FindString(match)
-	}
-	return ""
 }
 
 func GetAllSystems(client http.Client) []string {
@@ -48,7 +57,7 @@ func GetAllSystems(client http.Client) []string {
 		log.Fatal("failed to make http request: ", err)
 	}
 
-	log.Println("Systems request: ", res.Status)
+	//log.Println("Systems request: ", res.Status)
 
 	ids, err := getSystemIDsFromResponse(res)
 	if err != nil {

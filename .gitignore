@@ -1,2 +1,7 @@
 auth.sh
 run.sh
+/.idea/modules.xml
+/out
+/.idea/vcs.xml
+/vuln-wo-errata-api-test
+/.idea/vuln-wo-errata-api-test.iml
