@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/michalslomczynski/vuln-wo-errata-api-test/base"
-	"log"
+	"golang.org/x/exp/slog"
 	"net/http"
 	"regexp"
 )
@@ -31,10 +31,10 @@ func getSystemIDsFromResponse(res *http.Response) ([]string, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if name := getDisplayName(line); name != "" {
-			fmt.Println(name)
+			slog.Info(name)
 		}
 		if uuid := getUUID(line); uuid != "" {
-			fmt.Println("uuid: ", uuid)
+			slog.Info("uuid: ", uuid)
 			result = append(result, uuid)
 		}
 	}
@@ -48,20 +48,20 @@ func GetAllSystems(client http.Client) []string {
 	url := fmt.Sprintf("%s/systems?page_size=%d", base.APIurl, pageSize)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Fatal("failed to create new HTTP request: ", err)
+		slog.Error("failed to create new HTTP request: ", err)
 	}
 	req.Header = base.BasicHeader()
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatal("failed to make http request: ", err)
+		slog.Error("failed to make http request: ", err)
 	}
 
-	//log.Println("Systems request: ", res.Status)
+	slog.Debug("Systems request: ", res.Status)
 
 	ids, err := getSystemIDsFromResponse(res)
 	if err != nil {
-		log.Fatal("failed to get list of system IDs")
+		slog.Error("failed to get list of system IDs")
 	}
 
 	return ids

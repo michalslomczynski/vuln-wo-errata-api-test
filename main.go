@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/michalslomczynski/vuln-wo-errata-api-test/system"
 	"github.com/michalslomczynski/vuln-wo-errata-api-test/systemcve"
-	"log"
+	"golang.org/x/exp/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,7 +17,7 @@ func printSystemsWithUnfixedCVEs(client http.Client) {
 		fixed, unfixed := systemcve.GetSystemCVEsCount(client, systemID)
 		if fixed-unfixed != 0 {
 			fmt.Println(systemID)
-			return
+			//return
 		}
 	}
 }
@@ -28,10 +28,10 @@ func printSystemCVEsCount(client http.Client, systemID string) {
 }
 
 func printSystemCVEsWithRemediationManual(client http.Client) {
-	systems := system.GetAllSystems(client)
+	//systems := system.GetAllSystems(client)
 
-	for _, systemID := range systems {
-		cves := systemcve.GetSystemCVEsWithRemediation(client, systemID, "true,false", 1)
+	for _, systemID := range []string{"174d7f1b-a4b0-4ccf-8807-c3a7c3229f74"} {
+		cves := systemcve.GetSystemCVEsWithRemediation(client, systemID, "true,false", 0)
 		if len(cves) > 0 {
 			for _, cve := range cves {
 				fmt.Println(cve)
@@ -42,12 +42,19 @@ func printSystemCVEsWithRemediationManual(client http.Client) {
 	}
 }
 
+func init() {
+	level := new(slog.LevelVar)
+	level.Set(slog.LevelError)
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
+}
+
 func main() {
 	proxyUrl, err := url.Parse(os.Getenv("PROXY"))
 	if err != nil {
-		log.Fatal("failed to parse proxy URL")
+		slog.Error("failed to parse proxy URL")
 	}
 	client := http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
 
+	//printSystemsWithUnfixedCVEs(client)
 	printSystemCVEsWithRemediationManual(client)
 }

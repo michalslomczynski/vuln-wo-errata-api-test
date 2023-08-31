@@ -3,8 +3,8 @@ package base
 import (
 	"encoding/base64"
 	"fmt"
+	"golang.org/x/exp/slog"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -55,7 +55,7 @@ func PrintResponse(res *http.Response) {
 func MatchPattern(line, pattern string) string {
 	matched, err := regexp.MatchString(pattern, line)
 	if err != nil {
-		log.Fatal("pattern matching error: ", err)
+		slog.Error("pattern matching error: ", err)
 	}
 	if matched {
 		return line

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/michalslomczynski/vuln-wo-errata-api-test/base"
-	"log"
+	"golang.org/x/exp/slog"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -18,7 +18,7 @@ func systemCVEsURL(systemID string, filters []string) string {
 			url = fmt.Sprintf("%s&", url)
 		}
 	}
-	//fmt.Println(url)
+	slog.Debug(url)
 	return url
 }
 
@@ -29,7 +29,7 @@ func handleLine(line string) int {
 		totalItemsSubstr := re.FindString(match)
 		totalItems, err := strconv.Atoi(totalItemsSubstr)
 		if err != nil {
-			log.Fatal("total items regexp error: ", err)
+			slog.Error("total items regexp error: ", err)
 		}
 		return totalItems
 	}
@@ -46,10 +46,10 @@ func getTotalItems(res *http.Response) int {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatal("HTTP response reading error: ", err)
+		slog.Error("HTTP response reading error: ", err)
 	}
 
-	log.Fatal("total items not found")
+	slog.Error("total items not found")
 
 	return -1
 }
@@ -68,16 +68,16 @@ func GetSystemCVEsCount(client http.Client, systemID string) (int, int) {
 		cveURL := systemCVEsURL(systemID, []string{fmt.Sprintf("advisory_available=%s", filterVal)})
 		req, err := http.NewRequest("GET", cveURL, nil)
 		if err != nil {
-			log.Fatal("failed to create new HTTP request: ", err)
+			slog.Error("failed to create new HTTP request: ", err)
 		}
 		req.Header = base.BasicHeader()
 
 		res, err := client.Do(req)
 		if err != nil {
-			log.Fatal("failed to make http request: ", err)
+			slog.Error("failed to make http request: ", err)
 		}
 
-		//log.Println("System", systemID, "request: ", res.Status)
+		slog.Debug("System", systemID, "request: ", res.Status)
 
 		total := getTotalItems(res)
 
@@ -115,18 +115,18 @@ func GetSystemCVEsWithRemediation(client http.Client, systemID, advisoryFilter s
 	cveURL := systemCVEsURL(systemID, []string{fmt.Sprintf("advisory_available=%s", advisoryFilter)})
 	req, err := http.NewRequest("GET", cveURL, nil)
 	if err != nil {
-		log.Fatal("failed to create new HTTP request: ", err)
+		slog.Error("failed to create new HTTP request: ", err)
 	}
 	req.Header = base.BasicHeader()
 
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatal("failed to make http request: ", err)
+		slog.Error("failed to make http request: ", err)
 	}
 
 	cves, err := filterSystemCVEsWithRemediation(res, remediation)
 	if err != nil {
-		log.Fatal("failed to filter cves with remediation: ", err)
+		slog.Error("failed to filter cves with remediation: ", err)
 	}
 
 	return cves
