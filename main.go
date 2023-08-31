@@ -15,8 +15,8 @@ func printSystemsWithUnfixedCVEs(client http.Client) {
 
 	for _, systemID := range systems {
 		fixed, unfixed := systemcve.GetSystemCVEsCount(client, systemID)
-		if fixed-unfixed != 0 {
-			fmt.Println(systemID)
+		if unfixed != 0 {
+			fmt.Printf("%s fixed:%d unfixed:%d\n", systemID, fixed, unfixed)
 			//return
 		}
 	}
@@ -55,6 +55,6 @@ func main() {
 	}
 	client := http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
 
-	//printSystemsWithUnfixedCVEs(client)
-	printSystemCVEsWithRemediationManual(client)
+	printSystemsWithUnfixedCVEs(client)
+	//printSystemCVEsWithRemediationManual(client)
 }
